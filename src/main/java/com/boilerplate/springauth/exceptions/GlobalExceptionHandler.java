@@ -4,6 +4,8 @@ import java.time.Instant;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -34,6 +36,32 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(status).body(standardError);
 
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<StandardError> validationErrors(MethodArgumentNotValidException e, HttpServletRequest request) {
+
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        StringBuilder message = new StringBuilder();
+
+        for (FieldError error : e.getBindingResult().getFieldErrors()) {
+            message.append(error.getField())
+                .append(": ")
+                .append(error.getDefaultMessage())
+                .append("; ");
+        }
+
+        StandardError err = new StandardError(
+            Instant.now(),
+            status.value(),
+            "Validation error",
+            message.toString(),
+            request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(err);
+        
     }
 
 }
