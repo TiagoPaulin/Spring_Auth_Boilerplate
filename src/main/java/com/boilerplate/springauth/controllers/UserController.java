@@ -13,7 +13,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.boilerplate.springauth.dto.user.UserCreateRequest;
 import com.boilerplate.springauth.dto.user.UserResponse;
-import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.services.UserService;
 
 import jakarta.validation.Valid;
