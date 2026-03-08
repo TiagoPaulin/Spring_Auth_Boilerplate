@@ -3,6 +3,8 @@ package com.boilerplate.springauth.controllers;
 import java.net.URI;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.boilerplate.springauth.dto.user.UserCreateRequest;
 import com.boilerplate.springauth.dto.user.UserResponse;
+import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.services.UserService;
 
 import jakarta.validation.Valid;
@@ -34,6 +37,15 @@ public class UserController {
                     .buildAndExpand(obj.id()).toUri();
         
         return ResponseEntity.created(uri).body(obj);
+
+    }
+
+    @GetMapping(value = "/{id}")
+    public ResponseEntity<UserResponse> find (@PathVariable Long id) {
+
+        UserResponse user = service.findUser(id);
+
+        return ResponseEntity.ok().body(user);
 
     }
     

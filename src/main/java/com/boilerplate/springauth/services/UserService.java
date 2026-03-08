@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import com.boilerplate.springauth.dto.user.UserCreateRequest;
 import com.boilerplate.springauth.dto.user.UserResponse;
 import com.boilerplate.springauth.exceptions.BadRequestException;
+import com.boilerplate.springauth.exceptions.ResourceNotFoundException;
 import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.models.enums.Role;
 import com.boilerplate.springauth.repositories.UserRepository;
@@ -29,6 +30,14 @@ public class UserService {
 
         User user = toUser(request);
         user = repository.save(user);
+
+        return toResponse(user);
+
+    }
+
+    public UserResponse findUser (Long id) {
+
+        User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return toResponse(user);
 
