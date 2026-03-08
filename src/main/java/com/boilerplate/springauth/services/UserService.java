@@ -43,6 +43,12 @@ public class UserService {
 
     }
 
+    public void delete (Long id) {
+
+        repository.deleteById(id);
+
+    }
+
     private User toUser (UserCreateRequest request) {
 
         User user = new User();
