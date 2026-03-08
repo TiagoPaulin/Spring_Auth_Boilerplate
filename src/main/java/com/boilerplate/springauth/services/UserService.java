@@ -5,11 +5,14 @@ import org.springframework.stereotype.Service;
 
 import com.boilerplate.springauth.dto.user.UserCreateRequest;
 import com.boilerplate.springauth.dto.user.UserResponse;
+import com.boilerplate.springauth.dto.user.UserUpdateRequest;
 import com.boilerplate.springauth.exceptions.BadRequestException;
 import com.boilerplate.springauth.exceptions.ResourceNotFoundException;
 import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.models.enums.Role;
 import com.boilerplate.springauth.repositories.UserRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class UserService {
@@ -26,7 +29,7 @@ public class UserService {
 
     public UserResponse create (UserCreateRequest request) {
 
-       validateBusinessRules(request);
+       validateCreationBusinessRules(request);
 
         User user = toUser(request);
         user = repository.save(user);
@@ -46,6 +49,22 @@ public class UserService {
     public void delete (Long id) {
 
         repository.deleteById(id);
+
+    }
+
+    @Transactional
+    public UserResponse update (Long id, UserUpdateRequest updateRequest) {
+
+        validateUpdateBusinessRules(updateRequest);
+
+        User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (updateRequest.name() != null) user.setName(updateRequest.name());
+        if (updateRequest.email() != null) user.setEmail(updateRequest.email());
+        if (updateRequest.password() != null) user.setPassword(passwordEncoder.encode(updateRequest.password()));
+        if (updateRequest.active() != null) user.setActive(updateRequest.active());
+
+        return toResponse(repository.save(user));
 
     }
 
@@ -75,7 +94,15 @@ public class UserService {
 
     }
 
-    private void validateBusinessRules (UserCreateRequest request) {
+    private void validateCreationBusinessRules (UserCreateRequest request) {
+
+        if (repository.existsByEmail(request.email())) {
+            throw new BadRequestException("Email already in use");
+        }
+
+    }
+
+    private void validateUpdateBusinessRules (UserUpdateRequest request) {
 
         if (repository.existsByEmail(request.email())) {
             throw new BadRequestException("Email already in use");
