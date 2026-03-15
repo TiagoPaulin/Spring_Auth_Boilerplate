@@ -18,6 +18,8 @@ public class TokenService {
 
     @Value("${api.security.token.secret}")
     private String secret;
+    @Value("${api.security.token.expiration}")
+    private Long expireHours;
     
     public String generateToken (User user) {
 
@@ -63,7 +65,7 @@ public class TokenService {
     }
 
     private Instant getExpirationDate () {
-        return LocalDateTime.now().plusHours(4).toInstant(ZoneOffset.of("-03:00"));
+        return LocalDateTime.now().plusHours(expireHours).toInstant(ZoneOffset.of("-03:00"));
     }
 
 }
