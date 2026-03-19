@@ -11,6 +11,7 @@ import com.boilerplate.springauth.exceptions.ResourceNotFoundException;
 import com.boilerplate.springauth.models.RefreshToken;
 import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.repositories.RefreshTokenRepository;
+import com.boilerplate.springauth.repositories.UserRepository;
 import com.boilerplate.springauth.exceptions.BadRequestException;
 
 import jakarta.transaction.Transactional;
@@ -19,12 +20,14 @@ import jakarta.transaction.Transactional;
 public class RefreshTokenService {
 
     private final RefreshTokenRepository repository;
+    private final UserRepository userRepository;
     @Value("${api.security.refresh.expiration}")
     private Long expireDays;
 
-    public RefreshTokenService (RefreshTokenRepository repository) {
+    public RefreshTokenService (RefreshTokenRepository repository, UserRepository userRepository) {
 
         this.repository = repository;
+        this.userRepository = userRepository;
 
     }
 
@@ -69,7 +72,10 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public void revokeAll (User user) {
+    public void revokeAll (Long id) {
+
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
         repository.deleteByUser(user);
     }
     
