@@ -3,6 +3,7 @@ package com.boilerplate.springauth.controllers;
 import java.net.URI;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,6 +44,7 @@ public class UserController {
     }
 
     @GetMapping(value = "/{id}")
+    @PreAuthorize("@authorizationService.isOwner(#id) or hasRole('ADMIN')")
     public ResponseEntity<UserResponse> find (@PathVariable Long id) {
 
         UserResponse user = service.findUser(id);
@@ -61,6 +63,7 @@ public class UserController {
     }
 
     @PutMapping(value = "/{id}")
+    @PreAuthorize("@authorizationService.isOwner(#id) or hasRole('ADMIN')")
     public ResponseEntity<UserResponse> update (@PathVariable Long id, @RequestBody UserUpdateRequest request) {
 
         UserResponse response = service.update(id, request);

@@ -38,6 +38,18 @@ public class GlobalExceptionHandler {
 
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<StandardError> forbidden(ForbiddenException e, HttpServletRequest request) {
+
+        String error = "Forbidden Request";
+        HttpStatus status = HttpStatus.FORBIDDEN;
+
+        StandardError standardError = new StandardError(Instant.now(), status.value(), error, e.getMessage(), request.getRequestURI());
+
+        return ResponseEntity.status(status).body(standardError);
+
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<StandardError> validationErrors(MethodArgumentNotValidException e, HttpServletRequest request) {
 

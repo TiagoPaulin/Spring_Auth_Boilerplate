@@ -27,6 +27,7 @@ public class UserService {
 
     }
 
+    @Transactional
     public UserResponse create (UserCreateRequest request) {
 
        validateCreationBusinessRules(request);
@@ -46,6 +47,7 @@ public class UserService {
 
     }
 
+    @Transactional
     public void delete (Long id) {
 
         repository.deleteById(id);
@@ -55,9 +57,9 @@ public class UserService {
     @Transactional
     public UserResponse update (Long id, UserUpdateRequest updateRequest) {
 
-        validateUpdateBusinessRules(updateRequest);
-
         User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        validateUpdateBusinessRules(updateRequest, user);
 
         if (updateRequest.name() != null) user.setName(updateRequest.name());
         if (updateRequest.email() != null) user.setEmail(updateRequest.email());
@@ -102,9 +104,9 @@ public class UserService {
 
     }
 
-    private void validateUpdateBusinessRules (UserUpdateRequest request) {
+    private void validateUpdateBusinessRules (UserUpdateRequest request, User user) {
 
-        if (repository.existsByEmail(request.email())) {
+        if (request.email() != null && repository.existsByEmail(request.email()) && !user.getEmail().equals(request.email())) {
             throw new BadRequestException("Email already in use");
         }
 

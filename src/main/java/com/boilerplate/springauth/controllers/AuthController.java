@@ -1,8 +1,10 @@
 package com.boilerplate.springauth.controllers;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -61,18 +63,18 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout (@RequestBody TokenRefreshRequest request) {
+    public ResponseEntity<Void> logout (@RequestBody TokenRefreshRequest request, @AuthenticationPrincipal User user) {
 
-        refreshTokenService.revoke(request.refreshToken());
+        refreshTokenService.revoke(request.refreshToken(), user);
 
         return ResponseEntity.noContent().build();
 
     }
 
-    @DeleteMapping("/logout-all/{id}")
-    public ResponseEntity<Void> logoutAll (@PathVariable Long id) {
+    @DeleteMapping("/logout-all")
+    public ResponseEntity<Void> logoutAll (@AuthenticationPrincipal User user) {
 
-        refreshTokenService.revokeAll(id);
+        refreshTokenService.revokeAll(user);
 
         return ResponseEntity.noContent().build();
 
