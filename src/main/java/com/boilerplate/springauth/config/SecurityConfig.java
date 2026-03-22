@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.boilerplate.springauth.security.CustomAuthenticationEntryPoint;
 import com.boilerplate.springauth.security.SecurityFilter;
 
 import jakarta.servlet.DispatcherType;
@@ -24,9 +25,11 @@ import jakarta.servlet.DispatcherType;
 public class SecurityConfig {
 
     private final SecurityFilter securityFilter;
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
 
-    public SecurityConfig (SecurityFilter securityFilter) {
+    public SecurityConfig (SecurityFilter securityFilter, CustomAuthenticationEntryPoint authenticationEntryPoint) {
         this.securityFilter = securityFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
     }
     
     @Bean
@@ -60,6 +63,7 @@ public class SecurityConfig {
                 ).permitAll()
                 .anyRequest().authenticated()
             )
+            .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
             .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
             .headers(headers -> headers.frameOptions(frame -> frame.disable()))
             .build();

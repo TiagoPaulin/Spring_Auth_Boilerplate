@@ -76,4 +76,47 @@ public class GlobalExceptionHandler {
         
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<StandardError> accessDenied(org.springframework.security.access.AccessDeniedException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.FORBIDDEN;
+        StandardError err = new StandardError(
+            Instant.now(), 
+            status.value(), 
+            "Access Denied", 
+            "You do not have permission to access this resource", 
+            request.getRequestURI()
+        );
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<StandardError> handleAuthentication(org.springframework.security.core.AuthenticationException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.UNAUTHORIZED; 
+        
+        StandardError err = new StandardError(
+            Instant.now(),
+            status.value(),
+            "Authentication Error",
+            "Incorrect email or password", 
+            request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<StandardError> globalError(Exception e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        StandardError err = new StandardError(
+            Instant.now(),
+            status.value(),
+            "Internal Server Error",
+            "An unexpected error occurred on the server", 
+            request.getRequestURI()
+        );
+
+        e.printStackTrace(); 
+        return ResponseEntity.status(status).body(err);
+    }
+
 }
