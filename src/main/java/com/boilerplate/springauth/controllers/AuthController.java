@@ -17,10 +17,13 @@ import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.security.RefreshTokenService;
 import com.boilerplate.springauth.security.TokenService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping(value = "/auth")
+@Tag(name = "Authentication", description = "Endpoints for user authentication and session management")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -34,6 +37,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Authenticate user", description = "Validates credentials and returns a short-lived Access Token (JWT) and a long-lived Refresh Token.")
     public ResponseEntity<LoginResponse> login (@Valid @RequestBody LoginRequest request) {
 
         var usernamePassword = new UsernamePasswordAuthenticationToken(request.email(), request.password());
@@ -47,6 +51,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
+    @Operation(summary = "Refresh access token", description = "Uses a valid Refresh Token to generate a new Access Token without requiring the user to log in again.")
     public ResponseEntity<LoginResponse> refresh (@Valid @RequestBody TokenRefreshRequest request) {
 
         var refreshToken = refreshTokenService.findByToken(request.refreshToken());
@@ -61,6 +66,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "Logout specific session", description = "Revokes a specific Refresh Token, effectively logging out the user from that specific device/session.")
     public ResponseEntity<Void> logout (@RequestBody TokenRefreshRequest request, @AuthenticationPrincipal User user) {
 
         refreshTokenService.revoke(request.refreshToken(), user);
@@ -70,6 +76,7 @@ public class AuthController {
     }
 
     @DeleteMapping("/logout-all")
+    @Operation(summary = "Logout from all devices", description = "Revokes all Refresh Tokens associated with the authenticated user, forcing a logout on all devices.")
     public ResponseEntity<Void> logoutAll (@AuthenticationPrincipal User user) {
 
         refreshTokenService.revokeAll(user);

@@ -21,10 +21,12 @@ import com.boilerplate.springauth.dto.user.UserUpdateRequest;
 import com.boilerplate.springauth.services.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping(value = "/users")
+@Tag(name = "Users", description = "Management of user profiles and account statuses")
 public class UserController {
 
     private final UserService service;
@@ -34,6 +36,7 @@ public class UserController {
     }
 
     @PostMapping
+    @Operation(summary = "Register a new user", description = "Creates a new user account in the system. Publicly accessible.")
     public ResponseEntity<UserResponse> create (@Valid @RequestBody UserCreateRequest request) {
 
         UserResponse obj = service.create(request);
@@ -47,6 +50,7 @@ public class UserController {
 
     @GetMapping(value = "/{id}")
     @PreAuthorize("@authorizationService.isOwner(#id) or hasRole('ADMIN')")
+    @Operation(summary = "Get user by ID", description = "Retrieves profile details. Accessible by account owner or Admins.")
     public ResponseEntity<UserResponse> find (@PathVariable Long id) {
 
         UserResponse user = service.findUser(id);
@@ -56,6 +60,7 @@ public class UserController {
     }
    
     @DeleteMapping(value = "/{id}")
+    @Operation(summary = "Delete user", description = "Permanently removes a user from the database. Restricted to Admins.")
     public ResponseEntity<Void> delete (@PathVariable Long id) {
 
         service.delete(id);
@@ -66,6 +71,7 @@ public class UserController {
 
     @PutMapping(value = "/{id}")
     @PreAuthorize("@authorizationService.isOwner(#id) or hasRole('ADMIN')")
+    @Operation(summary = "Update user profile", description = "Updates personal information (name, email, password). Accessible by account owner or Admins.")
     public ResponseEntity<UserResponse> update (@PathVariable Long id, @RequestBody UserUpdateRequest request) {
 
         UserResponse response = service.update(id, request);
@@ -76,6 +82,7 @@ public class UserController {
 
     @PatchMapping(value = "/{id}/activate")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Activate user account", description = "Re-enables a disabled account. Restricted to Admins.")
     public ResponseEntity<Void> activate (@PathVariable Long id) {
 
         service.activate(id);
@@ -86,6 +93,7 @@ public class UserController {
 
     @PatchMapping(value = "/{id}/deactivate")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Deactivate user account", description = "Disables a user account, preventing login. Restricted to Admins.")
     public ResponseEntity<Void> deactivate (@PathVariable Long id) {
 
         service.deactivate(id);
