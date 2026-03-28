@@ -13,7 +13,5 @@ public record UserUpdateRequest(
     String email,
     @Schema(description = "New password for the account (leave blank if you don't want to change)", example = "newStrongPassword123")
     @Size(min = 6, message = "Password must be at least 6 characters long")
-    String password,
-    @Schema(description = "Account status (set to false to disable the user)", example = "true")
-    Boolean active
+    String password
 ) {}

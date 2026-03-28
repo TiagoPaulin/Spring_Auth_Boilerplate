@@ -64,9 +64,30 @@ public class UserService {
         if (updateRequest.name() != null) user.setName(updateRequest.name());
         if (updateRequest.email() != null) user.setEmail(updateRequest.email());
         if (updateRequest.password() != null) user.setPassword(passwordEncoder.encode(updateRequest.password()));
-        if (updateRequest.active() != null) user.setActive(updateRequest.active());
 
         return toResponse(repository.save(user));
+
+    }
+
+    @Transactional
+    public void activate (Long id) {
+
+        User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setActive(true);
+
+        repository.save(user);
+
+    }
+
+    @Transactional
+    public void deactivate (Long id) {
+
+        User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setActive(false);
+
+        repository.save(user);
 
     }
 

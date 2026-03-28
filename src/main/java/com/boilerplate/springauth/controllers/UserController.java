@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,6 +20,7 @@ import com.boilerplate.springauth.dto.user.UserResponse;
 import com.boilerplate.springauth.dto.user.UserUpdateRequest;
 import com.boilerplate.springauth.services.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 
 @RestController
@@ -69,6 +71,26 @@ public class UserController {
         UserResponse response = service.update(id, request);
 
         return ResponseEntity.ok().body(response);
+
+    }
+
+    @PatchMapping(value = "/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> activate (@PathVariable Long id) {
+
+        service.activate(id);
+
+        return ResponseEntity.noContent().build();
+
+    }
+
+    @PatchMapping(value = "/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deactivate (@PathVariable Long id) {
+
+        service.deactivate(id);
+
+        return ResponseEntity.noContent().build();
 
     }
 
