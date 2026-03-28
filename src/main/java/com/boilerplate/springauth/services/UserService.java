@@ -86,6 +86,10 @@ public class UserService {
 
         User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        if (user.getRole() == Role.ADMIN) {
+            validateIsNotLastAdmin();
+        }
+
         user.setActive(false);
 
         repository.save(user);
@@ -98,10 +102,7 @@ public class UserService {
         User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not fount"));
 
         if (user.getRole() == Role.ADMIN && roleRequest.role() != Role.ADMIN) {
-            long adminCount = repository.countByRole(Role.ADMIN);
-            if (adminCount <= 1) {
-                throw new BadRequestException("Cannot demote the only administrator in the sistem");
-            }
+            validateIsNotLastAdmin();
         }
 
         user.setRole(roleRequest.role());
@@ -148,6 +149,14 @@ public class UserService {
 
         if (request.email() != null && repository.existsByEmail(request.email()) && !user.getEmail().equals(request.email())) {
             throw new BadRequestException("Email already in use");
+        }
+
+    }
+
+    private void validateIsNotLastAdmin () {
+
+        if (repository.countByRole(Role.ADMIN) <= 1) {
+            throw new BadRequestException("The sytem have at least one active administrator.");
         }
 
     }
