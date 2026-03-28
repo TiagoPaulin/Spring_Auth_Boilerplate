@@ -12,6 +12,7 @@ import com.boilerplate.springauth.exceptions.ResourceNotFoundException;
 import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.models.enums.Role;
 import com.boilerplate.springauth.repositories.UserRepository;
+import com.boilerplate.springauth.security.RefreshTokenService;
 
 import jakarta.transaction.Transactional;
 
@@ -19,11 +20,13 @@ import jakarta.transaction.Transactional;
 public class UserService {
     
     private final UserRepository repository;
+    private final RefreshTokenService refreshTokenService;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository repository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository repository, RefreshTokenService refreshTokenService, PasswordEncoder passwordEncoder) {
 
         this.repository = repository;
+        this.refreshTokenService = refreshTokenService;
         this.passwordEncoder = passwordEncoder;
 
     }
@@ -51,6 +54,13 @@ public class UserService {
     @Transactional
     public void delete (Long id) {
 
+        User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getRole() == Role.ADMIN) {
+            validateIsNotLastAdmin();
+        }
+
+        refreshTokenService.revokeAll(user);
         repository.deleteById(id);
 
     }
@@ -62,9 +72,21 @@ public class UserService {
 
         validateUpdateBusinessRules(updateRequest, user);
 
+        boolean securitySensitiveChange = false;
+
         if (updateRequest.name() != null) user.setName(updateRequest.name());
-        if (updateRequest.email() != null) user.setEmail(updateRequest.email());
-        if (updateRequest.password() != null) user.setPassword(passwordEncoder.encode(updateRequest.password()));
+        if (updateRequest.email() != null && !updateRequest.email().equals(user.getEmail())) {
+            user.setEmail(updateRequest.email());
+            securitySensitiveChange = true;
+        }
+        if (updateRequest.password() != null) {
+            user.setPassword(passwordEncoder.encode(updateRequest.password()));
+            securitySensitiveChange = true;
+        }
+
+        if (securitySensitiveChange) {
+            refreshTokenService.revokeAll(user);
+        }
 
         return toResponse(repository.save(user));
 
@@ -93,13 +115,14 @@ public class UserService {
         user.setActive(false);
 
         repository.save(user);
+        refreshTokenService.revokeAll(user);
 
     }
 
     @Transactional
     public void changeRole (Long id, RoleUpdateRequest roleRequest) {
 
-        User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not fount"));
+        User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getRole() == Role.ADMIN && roleRequest.role() != Role.ADMIN) {
             validateIsNotLastAdmin();
@@ -108,6 +131,7 @@ public class UserService {
         user.setRole(roleRequest.role());
 
         repository.save(user);
+        refreshTokenService.revokeAll(user);
 
     }
 
@@ -156,7 +180,7 @@ public class UserService {
     private void validateIsNotLastAdmin () {
 
         if (repository.countByRole(Role.ADMIN) <= 1) {
-            throw new BadRequestException("The sytem have at least one active administrator.");
+            throw new BadRequestException("The system must have at least one active administrator.");
         }
 
     }
