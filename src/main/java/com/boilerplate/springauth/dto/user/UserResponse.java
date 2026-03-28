@@ -14,7 +14,7 @@ public record UserResponse(
     String name,
     @Schema(description = "Registered email address", example = "tiago.paulin@example.com")
     String email,
-    @Schema(description = "Access level assigned to the user", example = "ROLE_USER")
+    @Schema(description = "Access level assigned to the user", example = "USER")
     Role role,
     @Schema(description = "Status indicating if the account is enabled", example = "true")
     boolean active,

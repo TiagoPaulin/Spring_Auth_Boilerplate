@@ -3,6 +3,7 @@ package com.boilerplate.springauth.services;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.boilerplate.springauth.dto.user.RoleUpdateRequest;
 import com.boilerplate.springauth.dto.user.UserCreateRequest;
 import com.boilerplate.springauth.dto.user.UserResponse;
 import com.boilerplate.springauth.dto.user.UserUpdateRequest;
@@ -86,6 +87,24 @@ public class UserService {
         User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         user.setActive(false);
+
+        repository.save(user);
+
+    }
+
+    @Transactional
+    public void changeRole (Long id, RoleUpdateRequest roleRequest) {
+
+        User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not fount"));
+
+        if (user.getRole() == Role.ADMIN && roleRequest.role() != Role.ADMIN) {
+            long adminCount = repository.countByRole(Role.ADMIN);
+            if (adminCount <= 1) {
+                throw new BadRequestException("Cannot demote the only administrator in the sistem");
+            }
+        }
+
+        user.setRole(roleRequest.role());
 
         repository.save(user);
 

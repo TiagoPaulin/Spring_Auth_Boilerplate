@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.boilerplate.springauth.dto.user.RoleUpdateRequest;
 import com.boilerplate.springauth.dto.user.UserCreateRequest;
 import com.boilerplate.springauth.dto.user.UserResponse;
 import com.boilerplate.springauth.dto.user.UserUpdateRequest;
@@ -97,6 +98,17 @@ public class UserController {
     public ResponseEntity<Void> deactivate (@PathVariable Long id) {
 
         service.deactivate(id);
+
+        return ResponseEntity.noContent().build();
+
+    }
+
+    @PatchMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Change user role", description = "Updates the access level of a user. Restricted to Admins.")
+    public ResponseEntity<Void> changeRole (@PathVariable Long id, @RequestBody RoleUpdateRequest request) {
+
+        service.changeRole(id, request);
 
         return ResponseEntity.noContent().build();
 
