@@ -119,4 +119,28 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(err);
     }
 
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<StandardError> handleConstraintViolation(jakarta.validation.ConstraintViolationException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        
+        // Monta uma mensagem amigável com todos os erros de campos do Model
+        StringBuilder message = new StringBuilder();
+        e.getConstraintViolations().forEach(violation -> 
+            message.append(violation.getPropertyPath())
+                .append(": ")
+                .append(violation.getMessage())
+                .append("; ")
+        );
+
+        StandardError err = new StandardError(
+            Instant.now(),
+            status.value(),
+            "Constraint Violation",
+            message.toString(),
+            request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(err);
+    }
+
 }

@@ -19,5 +19,7 @@ public record UserResponse(
     @Schema(description = "Status indicating if the account is enabled", example = "true")
     boolean active,
     @Schema(description = "Timestamp when the user account was created", example = "2026-03-22T16:00:00")
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    @Schema(description = "Timestamp when the user account was updated", example = "2026-03-22T17:00:00")
+    LocalDateTime updatedAt
 ) {}
