@@ -26,7 +26,7 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     @JsonIgnore
     private User user;
-    @Column(nullable = false)
+    @Column(nullable = false, name = "expiry_date")
     private Instant expiryDate;
 
     public RefreshToken () {}

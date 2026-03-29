@@ -5,6 +5,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.boilerplate.springauth.exceptions.ResourceNotFoundException;
@@ -44,6 +45,17 @@ public class RefreshTokenService {
     public RefreshToken findByToken (String token) {
 
         return repository.findByToken(token).orElseThrow(() -> new ResourceNotFoundException("Refresh token not found"));
+
+    }
+
+    @Scheduled(cron = "0 0 3 * * ?")
+    @Transactional
+    public void deleteExpiredTokens () {
+
+        Instant now = Instant.now();
+
+        repository.deleteByExpiryDateBefore(now);
+        System.out.println("Cleaned up expired refresh tokens at " + now);
 
     }
 
