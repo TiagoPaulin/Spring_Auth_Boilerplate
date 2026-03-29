@@ -1,5 +1,7 @@
 package com.boilerplate.springauth.services;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +31,11 @@ public class UserService {
         this.refreshTokenService = refreshTokenService;
         this.passwordEncoder = passwordEncoder;
 
+    }
+
+    @Transactional
+    public Page<UserResponse> findAll (Pageable pageable) {
+        return repository.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional

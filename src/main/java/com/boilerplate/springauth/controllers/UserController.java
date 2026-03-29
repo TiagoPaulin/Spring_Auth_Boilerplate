@@ -2,6 +2,9 @@ package com.boilerplate.springauth.controllers;
 
 import java.net.URI;
 
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,6 +37,14 @@ public class UserController {
 
     public UserController (UserService service) {
         this.service = service;
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "List all users (Paginated)", description = "Retrieves a paginated list of all registered users. Restricted to Admins.")
+    public ResponseEntity<Page<UserResponse>> findAll(@ParameterObject Pageable pageable) {
+        Page<UserResponse> list = service.findAll(pageable);
+        return ResponseEntity.ok().body(list);
     }
 
     @PostMapping
