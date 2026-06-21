@@ -1,5 +1,7 @@
 package com.boilerplate.springauth.repositories;
 
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,5 +21,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRole (Role role);
 
     Page<User> findAll(Pageable pageable);
+
+    Optional<User> findOptionalByEmail(String email);
     
 }

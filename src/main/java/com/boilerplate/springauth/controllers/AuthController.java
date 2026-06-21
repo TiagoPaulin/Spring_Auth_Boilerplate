@@ -12,10 +12,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.boilerplate.springauth.dto.login.LoginRequest;
 import com.boilerplate.springauth.dto.login.LoginResponse;
+import com.boilerplate.springauth.dto.password.ForgotPasswordRequest;
+import com.boilerplate.springauth.dto.password.ForgotPasswordResponse;
+import com.boilerplate.springauth.dto.password.ResetPasswordRequest;
 import com.boilerplate.springauth.dto.refresh.TokenRefreshRequest;
+import com.boilerplate.springauth.models.ResetPasswordToken;
 import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.security.RefreshTokenService;
 import com.boilerplate.springauth.security.TokenService;
+import com.boilerplate.springauth.services.ResetPasswordTokenService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,11 +34,13 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
     private final RefreshTokenService refreshTokenService;
+    private final ResetPasswordTokenService resetPasswordTokenService;
 
-    public AuthController (AuthenticationManager authenticationManager, TokenService tokenService, RefreshTokenService refreshTokenService) {
+    public AuthController (AuthenticationManager authenticationManager, TokenService tokenService, RefreshTokenService refreshTokenService, ResetPasswordTokenService resetPasswordTokenService) {
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
         this.refreshTokenService = refreshTokenService;
+        this.resetPasswordTokenService = resetPasswordTokenService;
     }
 
     @PostMapping("/login")
@@ -80,6 +87,26 @@ public class AuthController {
     public ResponseEntity<Void> logoutAll (@AuthenticationPrincipal User user) {
 
         refreshTokenService.revokeAll(user);
+
+        return ResponseEntity.noContent().build();
+
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Generate a reset password token", description = "")
+    public ResponseEntity<ForgotPasswordResponse> forgotPassword (@Valid @RequestBody ForgotPasswordRequest request) {
+
+        ResetPasswordToken resetPasswordToken = resetPasswordTokenService.generateResetPasswordToken(request);
+
+        return ResponseEntity.ok(new ForgotPasswordResponse(resetPasswordToken.getToken()));
+
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset user's password", description = "Reset user's password with a valid token")
+    public ResponseEntity<Void> resetPassword (@Valid @RequestBody ResetPasswordRequest request) {
+
+        resetPasswordTokenService.changeUserPassword(request);
 
         return ResponseEntity.noContent().build();
 
