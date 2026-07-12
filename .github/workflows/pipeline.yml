@@ -38,9 +38,13 @@ jobs:
 
       - name: Run unit and integration tests
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/${{ secrets.DB_NAME }}
-          SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USER }}
-          SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
         run: mvn clean test
 
       - name: Build application package
