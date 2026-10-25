@@ -18,7 +18,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmail (String email);
 
-    long countByRole (Role role);
+    long countByRoleAndActiveTrue (Role role);
 
     Page<User> findAll(Pageable pageable);
 

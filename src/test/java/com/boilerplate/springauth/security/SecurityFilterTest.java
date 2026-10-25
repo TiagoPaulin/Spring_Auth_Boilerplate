@@ -122,6 +122,48 @@ public class SecurityFilterTest {
     }
 
     @Test
+    @DisplayName("Should not authenticate user when token subject no longer exists")
+    void doFilterInternal_ShouldNotAuthenticateUser_WhenUserDoesNotExist () throws ServletException, IOException {
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+
+        request.addHeader("Authorization", "Bearer old-email-token");
+        when(tokenService.validateToken("old-email-token")).thenReturn("old@test.com");
+        when(userRepository.findByEmail("old@test.com")).thenReturn(null);
+
+        securityFilter.doFilter(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        assertSame(request, filterChain.getRequest());
+        assertSame(response, filterChain.getResponse());
+
+    }
+
+    @Test
+    @DisplayName("Should not authenticate user when account is deactivated")
+    void doFilterInternal_ShouldNotAuthenticateUser_WhenUserIsDeactivated () throws ServletException, IOException {
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+        User user = createUser();
+        user.setActive(false);
+
+        request.addHeader("Authorization", "Bearer valid-token");
+        when(tokenService.validateToken("valid-token")).thenReturn(user.getEmail());
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(user);
+
+        securityFilter.doFilter(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        assertSame(request, filterChain.getRequest());
+        assertSame(response, filterChain.getResponse());
+
+    }
+
+    @Test
     @DisplayName("Should clear previous authentication before filtering request")
     void doFilterInternal_ShouldClearPreviousAuthentication_BeforeFilteringRequest () throws ServletException, IOException {
 

@@ -13,10 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.boilerplate.springauth.dto.login.LoginRequest;
 import com.boilerplate.springauth.dto.login.LoginResponse;
 import com.boilerplate.springauth.dto.password.ForgotPasswordRequest;
-import com.boilerplate.springauth.dto.password.ForgotPasswordResponse;
 import com.boilerplate.springauth.dto.password.ResetPasswordRequest;
 import com.boilerplate.springauth.dto.refresh.TokenRefreshRequest;
-import com.boilerplate.springauth.models.ResetPasswordToken;
 import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.security.RefreshTokenService;
 import com.boilerplate.springauth.security.TokenService;
@@ -93,12 +91,12 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    @Operation(summary = "Generate a reset password token", description = "")
-    public ResponseEntity<ForgotPasswordResponse> forgotPassword (@Valid @RequestBody ForgotPasswordRequest request) {
+    @Operation(summary = "Request a password reset", description = "Sends a password reset link (RESET_PASSWORD_URL?token=...) to the user's email. Always returns 202, whether the email is registered or not, so the endpoint cannot be used to discover accounts.")
+    public ResponseEntity<Void> forgotPassword (@Valid @RequestBody ForgotPasswordRequest request) {
 
-        ResetPasswordToken resetPasswordToken = resetPasswordTokenService.generateResetPasswordToken(request);
+        resetPasswordTokenService.requestPasswordReset(request);
 
-        return ResponseEntity.ok(new ForgotPasswordResponse(resetPasswordToken.getToken()));
+        return ResponseEntity.accepted().build();
 
     }
 

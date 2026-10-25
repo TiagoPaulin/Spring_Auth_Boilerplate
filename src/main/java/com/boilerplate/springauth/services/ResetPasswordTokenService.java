@@ -27,29 +27,34 @@ public class ResetPasswordTokenService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MailService mailService;
     @Value("${api.security.reset-password.expiration}")
     private Long expireMinutes;
 
-    public ResetPasswordTokenService (ResetPasswordTokenRepository repository, UserRepository userRepository, PasswordEncoder passwordEncoder, RefreshTokenRepository refreshTokenRepository) {
+    public ResetPasswordTokenService (ResetPasswordTokenRepository repository, UserRepository userRepository, PasswordEncoder passwordEncoder, RefreshTokenRepository refreshTokenRepository, MailService mailService) {
 
         this.repository = repository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.mailService = mailService;
 
     }
-    
-    public ResetPasswordToken generateResetPasswordToken (ForgotPasswordRequest request) {
 
-        User user = findUser(request.email());
-        ResetPasswordToken resetPasswordToken = new ResetPasswordToken();
+    public void requestPasswordReset (ForgotPasswordRequest request) {
 
-        resetPasswordToken.setUser(user);
-        resetPasswordToken.setToken(UUID.randomUUID().toString());
-        resetPasswordToken.setExpiryDate(Instant.now().plus(expireMinutes, ChronoUnit.MINUTES));
+        userRepository.findOptionalByEmail(request.email()).ifPresent(user -> {
 
-        return repository.save(resetPasswordToken);
+            ResetPasswordToken resetPasswordToken = new ResetPasswordToken();
 
+            resetPasswordToken.setUser(user);
+            resetPasswordToken.setToken(UUID.randomUUID().toString());
+            resetPasswordToken.setExpiryDate(Instant.now().plus(expireMinutes, ChronoUnit.MINUTES));
+
+            repository.save(resetPasswordToken);
+            mailService.sendPasswordResetEmail(user.getEmail(), resetPasswordToken.getToken(), expireMinutes);
+
+        });
 
     }
 
@@ -80,11 +85,5 @@ public class ResetPasswordTokenService {
         return repository.findByToken(token).orElseThrow(() -> new ResourceNotFoundException("token not found"));
 
     }
-
-    private User findUser (String email) {
-
-        return userRepository.findOptionalByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-    } 
 
 }

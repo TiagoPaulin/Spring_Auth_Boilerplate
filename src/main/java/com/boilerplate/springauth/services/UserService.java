@@ -13,6 +13,7 @@ import com.boilerplate.springauth.exceptions.BadRequestException;
 import com.boilerplate.springauth.exceptions.ResourceNotFoundException;
 import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.models.enums.Role;
+import com.boilerplate.springauth.repositories.ResetPasswordTokenRepository;
 import com.boilerplate.springauth.repositories.UserRepository;
 import com.boilerplate.springauth.security.RefreshTokenService;
 
@@ -20,15 +21,17 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class UserService {
-    
+
     private final UserRepository repository;
     private final RefreshTokenService refreshTokenService;
+    private final ResetPasswordTokenRepository resetPasswordTokenRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository repository, RefreshTokenService refreshTokenService, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository repository, RefreshTokenService refreshTokenService, ResetPasswordTokenRepository resetPasswordTokenRepository, PasswordEncoder passwordEncoder) {
 
         this.repository = repository;
         this.refreshTokenService = refreshTokenService;
+        this.resetPasswordTokenRepository = resetPasswordTokenRepository;
         this.passwordEncoder = passwordEncoder;
 
     }
@@ -63,11 +66,12 @@ public class UserService {
 
         User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (user.getRole() == Role.ADMIN) {
+        if (isActiveAdmin(user)) {
             validateIsNotLastAdmin();
         }
 
         refreshTokenService.revokeAll(user);
+        resetPasswordTokenRepository.deleteByUser(user);
         repository.deleteById(id);
 
     }
@@ -115,7 +119,7 @@ public class UserService {
 
         User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (user.getRole() == Role.ADMIN) {
+        if (isActiveAdmin(user)) {
             validateIsNotLastAdmin();
         }
 
@@ -131,7 +135,7 @@ public class UserService {
 
         User user = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (user.getRole() == Role.ADMIN && roleRequest.role() != Role.ADMIN) {
+        if (isActiveAdmin(user) && roleRequest.role() != Role.ADMIN) {
             validateIsNotLastAdmin();
         }
 
@@ -185,9 +189,15 @@ public class UserService {
 
     }
 
+    private boolean isActiveAdmin (User user) {
+
+        return user.getRole() == Role.ADMIN && user.isActive();
+
+    }
+
     private void validateIsNotLastAdmin () {
 
-        if (repository.countByRole(Role.ADMIN) <= 1) {
+        if (repository.countByRoleAndActiveTrue(Role.ADMIN) <= 1) {
             throw new BadRequestException("The system must have at least one active administrator.");
         }
 

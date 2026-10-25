@@ -1,5 +1,6 @@
 package com.boilerplate.springauth.services;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -9,6 +10,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -47,6 +49,8 @@ public class ResetPasswordTokenServiceTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
+    @Mock
+    private MailService mailService;
 
     @InjectMocks
     private ResetPasswordTokenService resetPasswordTokenService;
@@ -59,49 +63,42 @@ public class ResetPasswordTokenServiceTest {
     }
 
     @Test
-    @DisplayName("Should generate reset password token when user exists")
-    void generateResetPasswordToken_ShouldGenerateToken_WhenUserExists () {
+    @DisplayName("Should save reset password token and email it when user exists")
+    void requestPasswordReset_ShouldSaveTokenAndSendEmail_WhenUserExists () {
 
         ForgotPasswordRequest request = new ForgotPasswordRequest("tiago@test.com");
         User user = createUser(1L);
 
         when(userRepository.findOptionalByEmail(request.email())).thenReturn(Optional.of(user));
-        when(repository.save(any(ResetPasswordToken.class))).thenAnswer(invocation -> {
-            ResetPasswordToken resetPasswordToken = invocation.getArgument(0);
-            resetPasswordToken.setId(1L);
-            return resetPasswordToken;
-        });
 
-        ResetPasswordToken response = resetPasswordTokenService.generateResetPasswordToken(request);
+        resetPasswordTokenService.requestPasswordReset(request);
 
         ArgumentCaptor<ResetPasswordToken> tokenCaptor = ArgumentCaptor.forClass(ResetPasswordToken.class);
         verify(repository).save(tokenCaptor.capture());
 
         ResetPasswordToken savedToken = tokenCaptor.getValue();
-        assertNotNull(response);
-        assertEquals(1L, response.getId());
         assertEquals(user, savedToken.getUser());
         assertNotNull(savedToken.getToken());
         assertFalse(savedToken.getToken().isBlank());
         assertNotNull(savedToken.getExpiryDate());
         assertFalse(savedToken.getUsed());
         assertFalse(savedToken.isExpired());
+        verify(mailService).sendPasswordResetEmail(user.getEmail(), savedToken.getToken(), 15L);
 
     }
 
     @Test
-    @DisplayName("Should throw ResourceNotFoundException when generating token for missing user")
-    void generateResetPasswordToken_ShouldThrowException_WhenUserDoesNotExist () {
+    @DisplayName("Should neither save token nor send email when user does not exist")
+    void requestPasswordReset_ShouldDoNothing_WhenUserDoesNotExist () {
 
         ForgotPasswordRequest request = new ForgotPasswordRequest("missing@test.com");
 
         when(userRepository.findOptionalByEmail(request.email())).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> {
-            resetPasswordTokenService.generateResetPasswordToken(request);
-        });
+        assertDoesNotThrow(() -> resetPasswordTokenService.requestPasswordReset(request));
 
         verify(repository, never()).save(any(ResetPasswordToken.class));
+        verifyNoInteractions(mailService);
 
     }
 

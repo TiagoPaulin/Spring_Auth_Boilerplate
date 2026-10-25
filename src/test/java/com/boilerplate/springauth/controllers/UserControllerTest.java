@@ -398,6 +398,125 @@ public class UserControllerTest {
 
     }
 
+    @Test
+    @DisplayName("Should return bad request when update password is too short")
+    void update_ShouldReturnBadRequest_WhenPasswordIsTooShort () throws Exception {
+
+        User user = createUser(1L, "Tiago", "tiago@test.com", Role.USER);
+        UserUpdateRequest request = new UserUpdateRequest(null, null, "1");
+
+        authenticate("user-token", user);
+
+        mockMvc.perform(put("/users/1")
+                .header("Authorization", "Bearer user-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("Validation error"))
+            .andExpect(jsonPath("$.message", containsString("password")));
+
+        verify(userService, never()).update(any(), any());
+
+    }
+
+    @Test
+    @DisplayName("Should return bad request when update name is blank")
+    void update_ShouldReturnBadRequest_WhenNameIsBlank () throws Exception {
+
+        User user = createUser(1L, "Tiago", "tiago@test.com", Role.USER);
+        UserUpdateRequest request = new UserUpdateRequest("   ", null, null);
+
+        authenticate("user-token", user);
+
+        mockMvc.perform(put("/users/1")
+                .header("Authorization", "Bearer user-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message", containsString("name")));
+
+        verify(userService, never()).update(any(), any());
+
+    }
+
+    @Test
+    @DisplayName("Should return bad request when role is missing")
+    void changeRole_ShouldReturnBadRequest_WhenRoleIsMissing () throws Exception {
+
+        User admin = createUser(1L, "Admin", "admin@test.com", Role.ADMIN);
+
+        authenticate("admin-token", admin);
+
+        mockMvc.perform(patch("/users/2/role")
+                .header("Authorization", "Bearer admin-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message", containsString("role")));
+
+        verify(userService, never()).changeRole(any(), any());
+
+    }
+
+    @Test
+    @DisplayName("Should return bad request when request body is malformed")
+    void create_ShouldReturnBadRequest_WhenBodyIsMalformed () throws Exception {
+
+        mockMvc.perform(post("/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{ not-json"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("Malformed request"));
+
+        verify(userService, never()).create(any());
+
+    }
+
+    @Test
+    @DisplayName("Should return bad request when path variable has invalid type")
+    void find_ShouldReturnBadRequest_WhenIdIsNotNumeric () throws Exception {
+
+        User admin = createUser(1L, "Admin", "admin@test.com", Role.ADMIN);
+
+        authenticate("admin-token", admin);
+
+        mockMvc.perform(get("/users/abc")
+                .header("Authorization", "Bearer admin-token"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message", containsString("id")));
+
+    }
+
+    @Test
+    @DisplayName("Should return not found when route does not exist")
+    void unknownRoute_ShouldReturnNotFound () throws Exception {
+
+        User admin = createUser(1L, "Admin", "admin@test.com", Role.ADMIN);
+
+        authenticate("admin-token", admin);
+
+        mockMvc.perform(get("/does-not-exist")
+                .header("Authorization", "Bearer admin-token"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.status").value(404));
+
+    }
+
+    @Test
+    @DisplayName("Should return method not allowed when HTTP method is not supported")
+    void unsupportedMethod_ShouldReturnMethodNotAllowed () throws Exception {
+
+        User admin = createUser(1L, "Admin", "admin@test.com", Role.ADMIN);
+
+        authenticate("admin-token", admin);
+
+        mockMvc.perform(patch("/users")
+                .header("Authorization", "Bearer admin-token"))
+            .andExpect(status().isMethodNotAllowed())
+            .andExpect(jsonPath("$.status").value(405));
+
+    }
+
     private void authenticate (String token, UserDetails user) {
 
         when(tokenService.validateToken(token)).thenReturn(user.getUsername());

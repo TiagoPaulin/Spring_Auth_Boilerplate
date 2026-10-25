@@ -2,18 +2,25 @@ package com.boilerplate.springauth.exceptions;
 
 import java.time.Instant;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
-    
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<StandardError> resourceNotFound (ResourceNotFoundException e, HttpServletRequest request) {
 
@@ -104,18 +111,61 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(err);
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<StandardError> unreadableBody(HttpMessageNotReadableException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        StandardError err = new StandardError(
+            Instant.now(),
+            status.value(),
+            "Malformed request",
+            "Request body is missing or malformed",
+            request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<StandardError> typeMismatch(MethodArgumentTypeMismatchException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        StandardError err = new StandardError(
+            Instant.now(),
+            status.value(),
+            "Malformed request",
+            "Invalid value for parameter '" + e.getName() + "'",
+            request.getRequestURI()
+        );
+
+        return ResponseEntity.status(status).body(err);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<StandardError> globalError(Exception e, HttpServletRequest request) {
+
+        // Spring MVC exceptions (unknown route, unsupported method, media type...) already carry their HTTP status
+        if (e instanceof ErrorResponse errorResponse) {
+            HttpStatus status = HttpStatus.valueOf(errorResponse.getStatusCode().value());
+            StandardError err = new StandardError(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                errorResponse.getBody().getDetail(),
+                request.getRequestURI()
+            );
+
+            return ResponseEntity.status(status).headers(errorResponse.getHeaders()).body(err);
+        }
+
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         StandardError err = new StandardError(
             Instant.now(),
             status.value(),
             "Internal Server Error",
-            "An unexpected error occurred on the server", 
+            "An unexpected error occurred on the server",
             request.getRequestURI()
         );
 
-        e.printStackTrace(); 
+        logger.error("Unexpected error on {}", request.getRequestURI(), e);
         return ResponseEntity.status(status).body(err);
     }
 

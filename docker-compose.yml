@@ -17,6 +17,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+  mailpit:
+    image: axllent/mailpit:v1.31
+    container_name: springauth-mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
   backend-api:
     build: .
     container_name: springauth-api
@@ -30,8 +36,13 @@ services:
       - ADMIN_NAME=${ADMIN_NAME}
       - ADMIN_EMAIL=${ADMIN_EMAIL}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - MAIL_HOST=mailpit
+      - MAIL_PORT=1025
+      - RESET_PASSWORD_URL=${RESET_PASSWORD_URL:-http://localhost:3000/reset-password}
     depends_on:
       postgres-db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
 volumes:
   postgres_data:

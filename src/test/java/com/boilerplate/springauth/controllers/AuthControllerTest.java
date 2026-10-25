@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -34,7 +35,6 @@ import com.boilerplate.springauth.dto.refresh.TokenRefreshRequest;
 import com.boilerplate.springauth.exceptions.BadRequestException;
 import com.boilerplate.springauth.exceptions.ResourceNotFoundException;
 import com.boilerplate.springauth.models.RefreshToken;
-import com.boilerplate.springauth.models.ResetPasswordToken;
 import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.models.enums.Role;
 import com.boilerplate.springauth.repositories.UserRepository;
@@ -227,22 +227,18 @@ public class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("Should generate reset password token")
-    void forgotPassword_ShouldGenerateResetPasswordToken_WhenUserExists () throws Exception {
+    @DisplayName("Should accept forgot password request without exposing the reset token")
+    void forgotPassword_ShouldReturnAcceptedWithoutBody () throws Exception {
 
         ForgotPasswordRequest request = new ForgotPasswordRequest("tiago@test.com");
-        User user = createUser(1L, "Tiago", "tiago@test.com", Role.USER);
-        ResetPasswordToken resetPasswordToken = createResetPasswordToken("reset-token", user, Instant.now().plusSeconds(900), false);
-
-        when(resetPasswordTokenService.generateResetPasswordToken(request)).thenReturn(resetPasswordToken);
 
         mockMvc.perform(post("/auth/forgot-password")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.token").value("reset-token"));
+            .andExpect(status().isAccepted())
+            .andExpect(content().string(""));
 
-        verify(resetPasswordTokenService).generateResetPasswordToken(request);
+        verify(resetPasswordTokenService).requestPasswordReset(request);
 
     }
 
@@ -260,27 +256,7 @@ public class AuthControllerTest {
             .andExpect(jsonPath("$.error").value("Validation error"))
             .andExpect(jsonPath("$.message", containsString("email")));
 
-        verify(resetPasswordTokenService, never()).generateResetPasswordToken(any(ForgotPasswordRequest.class));
-
-    }
-
-    @Test
-    @DisplayName("Should return not found when forgot password email does not exist")
-    void forgotPassword_ShouldReturnNotFound_WhenUserDoesNotExist () throws Exception {
-
-        ForgotPasswordRequest request = new ForgotPasswordRequest("missing@test.com");
-
-        when(resetPasswordTokenService.generateResetPasswordToken(request))
-            .thenThrow(new ResourceNotFoundException("User not found"));
-
-        mockMvc.perform(post("/auth/forgot-password")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.status").value(404))
-            .andExpect(jsonPath("$.error").value("Resource not found"))
-            .andExpect(jsonPath("$.message").value("User not found"))
-            .andExpect(jsonPath("$.path").value("/auth/forgot-password"));
+        verify(resetPasswordTokenService, never()).requestPasswordReset(any(ForgotPasswordRequest.class));
 
     }
 
@@ -451,20 +427,6 @@ public class AuthControllerTest {
         refreshToken.setExpiryDate(expiryDate);
 
         return refreshToken;
-
-    }
-
-    private ResetPasswordToken createResetPasswordToken (String token, User user, Instant expiryDate, boolean used) {
-
-        ResetPasswordToken resetPasswordToken = new ResetPasswordToken();
-
-        resetPasswordToken.setId(1L);
-        resetPasswordToken.setToken(token);
-        resetPasswordToken.setUser(user);
-        resetPasswordToken.setExpiryDate(expiryDate);
-        resetPasswordToken.setUsed(used);
-
-        return resetPasswordToken;
 
     }
 

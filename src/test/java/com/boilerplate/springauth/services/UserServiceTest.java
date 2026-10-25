@@ -34,6 +34,7 @@ import com.boilerplate.springauth.exceptions.BadRequestException;
 import com.boilerplate.springauth.exceptions.ResourceNotFoundException;
 import com.boilerplate.springauth.models.User;
 import com.boilerplate.springauth.models.enums.Role;
+import com.boilerplate.springauth.repositories.ResetPasswordTokenRepository;
 import com.boilerplate.springauth.repositories.UserRepository;
 import com.boilerplate.springauth.security.RefreshTokenService;
 
@@ -44,6 +45,8 @@ public class UserServiceTest {
     private UserRepository repository;
     @Mock
     private RefreshTokenService refreshTokenService;
+    @Mock
+    private ResetPasswordTokenRepository resetPasswordTokenRepository;
     @Mock
     private PasswordEncoder passwordEncoder;
 
@@ -148,7 +151,7 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Should delete user and revoke refresh tokens")
+    @DisplayName("Should delete user and revoke refresh and reset password tokens")
     void delete_ShouldDeleteUserAndRevokeTokens_WhenUserExists () {
 
         Long userId = 1L;
@@ -159,6 +162,23 @@ public class UserServiceTest {
         userService.delete(userId);
 
         verify(refreshTokenService, times(1)).revokeAll(user);
+        verify(resetPasswordTokenRepository, times(1)).deleteByUser(user);
+        verify(repository, times(1)).deleteById(userId);
+
+    }
+
+    @Test
+    @DisplayName("Should delete inactive admin without last admin validation")
+    void delete_ShouldSkipLastAdminValidation_WhenAdminIsInactive () {
+
+        Long userId = 1L;
+        User user = createUser(userId, "Admin", "admin@test.com", Role.ADMIN, false);
+
+        when(repository.findById(userId)).thenReturn(Optional.of(user));
+
+        userService.delete(userId);
+
+        verify(repository, never()).countByRoleAndActiveTrue(any(Role.class));
         verify(repository, times(1)).deleteById(userId);
 
     }
@@ -171,7 +191,7 @@ public class UserServiceTest {
         User user = createUser(userId, "Admin", "admin@test.com", Role.ADMIN, true);
 
         when(repository.findById(userId)).thenReturn(Optional.of(user));
-        when(repository.countByRole(Role.ADMIN)).thenReturn(2L);
+        when(repository.countByRoleAndActiveTrue(Role.ADMIN)).thenReturn(2L);
 
         userService.delete(userId);
 
@@ -188,13 +208,14 @@ public class UserServiceTest {
         User user = createUser(userId, "Admin", "admin@test.com", Role.ADMIN, true);
 
         when(repository.findById(userId)).thenReturn(Optional.of(user));
-        when(repository.countByRole(Role.ADMIN)).thenReturn(1L);
+        when(repository.countByRoleAndActiveTrue(Role.ADMIN)).thenReturn(1L);
 
         assertThrows(BadRequestException.class, () -> {
             userService.delete(userId);
         });
 
         verify(refreshTokenService, never()).revokeAll(any(User.class));
+        verify(resetPasswordTokenRepository, never()).deleteByUser(any(User.class));
         verify(repository, never()).deleteById(userId);
 
     }
@@ -212,6 +233,7 @@ public class UserServiceTest {
 
         verify(repository, never()).deleteById(userId);
         verifyNoInteractions(refreshTokenService);
+        verifyNoInteractions(resetPasswordTokenRepository);
 
     }
 
@@ -370,7 +392,7 @@ public class UserServiceTest {
         User user = createUser(userId, "Admin", "admin@test.com", Role.ADMIN, true);
 
         when(repository.findById(userId)).thenReturn(Optional.of(user));
-        when(repository.countByRole(Role.ADMIN)).thenReturn(1L);
+        when(repository.countByRoleAndActiveTrue(Role.ADMIN)).thenReturn(1L);
 
         assertThrows(BadRequestException.class, () -> {
             userService.deactivate(userId);
@@ -379,6 +401,22 @@ public class UserServiceTest {
         assertTrue(user.isActive());
         verify(repository, never()).save(any(User.class));
         verify(refreshTokenService, never()).revokeAll(any(User.class));
+
+    }
+
+    @Test
+    @DisplayName("Should deactivate inactive admin without last admin validation")
+    void deactivate_ShouldSkipLastAdminValidation_WhenAdminIsAlreadyInactive () {
+
+        Long userId = 1L;
+        User user = createUser(userId, "Admin", "admin@test.com", Role.ADMIN, false);
+
+        when(repository.findById(userId)).thenReturn(Optional.of(user));
+
+        userService.deactivate(userId);
+
+        verify(repository, never()).countByRoleAndActiveTrue(any(Role.class));
+        verify(repository, times(1)).save(user);
 
     }
 
@@ -425,7 +463,7 @@ public class UserServiceTest {
         RoleUpdateRequest request = new RoleUpdateRequest(Role.USER);
 
         when(repository.findById(userId)).thenReturn(Optional.of(user));
-        when(repository.countByRole(Role.ADMIN)).thenReturn(1L);
+        when(repository.countByRoleAndActiveTrue(Role.ADMIN)).thenReturn(1L);
 
         assertThrows(BadRequestException.class, () -> {
             userService.changeRole(userId, request);

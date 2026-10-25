@@ -84,7 +84,7 @@ public class UserController {
     @PutMapping(value = "/{id}")
     @PreAuthorize("@authorizationService.isOwner(#id) or hasRole('ADMIN')")
     @Operation(summary = "Update user profile", description = "Updates personal information (name, email, password). Accessible by account owner or Admins.")
-    public ResponseEntity<UserResponse> update (@PathVariable Long id, @RequestBody UserUpdateRequest request) {
+    public ResponseEntity<UserResponse> update (@PathVariable Long id, @Valid @RequestBody UserUpdateRequest request) {
 
         UserResponse response = service.update(id, request);
 
@@ -117,7 +117,7 @@ public class UserController {
     @PatchMapping("/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Change user role", description = "Updates the access level of a user. Restricted to Admins.")
-    public ResponseEntity<Void> changeRole (@PathVariable Long id, @RequestBody RoleUpdateRequest request) {
+    public ResponseEntity<Void> changeRole (@PathVariable Long id, @Valid @RequestBody RoleUpdateRequest request) {
 
         service.changeRole(id, request);
 
